@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Stage, Layer, ContextMenu } from "react-konva";
 import { useDropzone } from "react-dropzone";
 import { toast } from "@/hooks/use-toast";
@@ -71,19 +71,10 @@ import {
 import { cn } from "@/lib/utils";
 import {
   Upload,
-  Play,
   Wand2,
-  Settings,
   Key,
-  X,
-  RefreshCw,
-  Undo,
-  Redo,
-  Download,
-  Trash2,
-  Info,
-  Video,
-  Image as ImageIcon,
+  Sparkles,
+  Plus,
 } from "lucide-react";
 import { SpinnerIcon } from "@/components/icons";
 
@@ -129,33 +120,6 @@ export default function HomePage() {
   const [isIsolating, setIsIsolating] = useState(false);
   const [customApiKey, setCustomApiKey] = useState<string>("");
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
-  const [hiddenVideoControlsIds, setHiddenVideoControlsIds] = useState<
-    Set<string>
-  >(new Set());
-
-  // Video dialog states
-  const [imageToVideoDialog, setImageToVideoDialog] = useState<{
-    isOpen: boolean;
-    imageUrl: string;
-    imageId: string;
-  }>({ isOpen: false, imageUrl: "", imageId: "" });
-  const [videoToVideoDialog, setVideoToVideoDialog] = useState<{
-    isOpen: boolean;
-    videoUrl: string;
-    videoId: string;
-  }>({ isOpen: false, videoUrl: "", videoId: "" });
-  const [extendVideoDialog, setExtendVideoDialog] = useState<{
-    isOpen: boolean;
-    videoUrl: string;
-    videoId: string;
-  }>({ isOpen: false, videoUrl: "", videoId: "" });
-  const [removeVideoBackgroundDialog, setRemoveVideoBackgroundDialog] =
-    useState<{
-      isOpen: boolean;
-      videoUrl: string;
-      videoId: string;
-      videoDuration: number;
-    }>({ isOpen: false, videoUrl: "", videoId: "", videoDuration: 0 });
 
   // History state
   const [history, setHistory] = useState<HistoryState[]>([]);
@@ -542,7 +506,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-background">
+    <div className="h-screen w-screen overflow-hidden bg-zinc-950 text-white">
       {/* Main canvas area */}
       <div
         {...getRootProps()}
@@ -656,7 +620,7 @@ export default function HomePage() {
           videos={videos}
           selectedIds={selectedIds}
           viewport={viewport}
-          hiddenVideoControlsIds={hiddenVideoControlsIds}
+          hiddenVideoControlsIds={new Set()}
           setVideos={setVideos}
         />
 
@@ -671,155 +635,93 @@ export default function HomePage() {
         <MiniMap
           images={images}
           videos={videos}
-          viewport={viewport}
-          canvasSize={canvasSize}
-        />
-
-        {/* Generation indicator */}
-        {(isGenerating || activeGenerations.size > 0) && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-            <GenerationsIndicator
-              isAnimating={true}
-              activeGenerationsSize={activeGenerations.size}
-              outputType="image"
             />
+        {/* Top toolbar */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-sm rounded-full px-4 py-2 border border-zinc-800">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-white hover:bg-zinc-800 rounded-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add
+            </Button>
+            <div className="w-px h-6 bg-zinc-700" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRunGeneration}
+              disabled={isGenerating || !generationSettings.prompt.trim()}
+              className="text-white hover:bg-zinc-800 rounded-full"
+            >
+              {isGenerating ? (
+                <SpinnerIcon className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4 mr-2" />
+              )}
+              Generate
+            </Button>
+            <div className="w-px h-6 bg-zinc-700" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsApiKeyDialogOpen(true)}
+              className="text-white hover:bg-zinc-800 rounded-full"
+            >
+              <Key className="h-4 w-4" />
+            </Button>
           </div>
-        )}
-
-        {/* Dimension display */}
-        <DimensionDisplay
-          selectedImages={images.filter((img) => selectedIds.includes(img.id))}
-          viewport={viewport}
-        />
-
-        {/* Mobile toolbar */}
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20">
-          <MobileToolbar
-            selectedIds={selectedIds}
-            images={images}
-            isGenerating={isGenerating}
-            generationSettings={generationSettings}
-            handleRun={handleRunGeneration}
-            handleDuplicate={() => {
-              // Duplicate selected items
-              const newImages = images
-                .filter((img) => selectedIds.includes(img.id))
-                .map((img) => ({
-                  ...img,
-                  id: `${img.id}-copy-${Date.now()}`,
-                  x: img.x + 20,
-                  y: img.y + 20,
-                }));
-              setImages((prev) => [...prev, ...newImages]);
-            }}
-            handleRemoveBackground={handleRemoveBackgroundAction}
-            handleCombineImages={() => {
-              // Combine images logic would go here
-              toast({
-                title: "Feature coming soon",
-                description: "Image combination will be available soon",
-              });
-            }}
-            handleDelete={() => {
-              setImages((prev) =>
-                prev.filter((img) => !selectedIds.includes(img.id)),
-              );
-              setVideos((prev) =>
-                prev.filter((vid) => !selectedIds.includes(vid.id)),
-              );
-              setSelectedIds([]);
-            }}
-            setCroppingImageId={setCroppingImageId}
-            sendToFront={() => {
-              // Layer management logic would go here
-            }}
-            sendToBack={() => {
-              // Layer management logic would go here
-            }}
-            bringForward={() => {
-              // Layer management logic would go here
-            }}
-            sendBackward={() => {
-              // Layer management logic would go here
-            }}
-          />
         </div>
 
-        {/* Control panel */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 bg-card rounded-2xl p-4 shadow-lg border max-w-2xl w-full mx-4">
-          <div className="space-y-4">
-            {/* Prompt input */}
-            <div>
-              <Label htmlFor="prompt">Prompt</Label>
-              <Textarea
-                id="prompt"
-                placeholder="Describe what you want to generate or transform..."
-                value={generationSettings.prompt}
-                onChange={(e) =>
-                  setGenerationSettings((prev) => ({
-                    ...prev,
-                    prompt: e.target.value,
-                  }))
-                }
-                className="mt-1"
-              />
-            </div>
+        {/* Bottom control panel */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="bg-zinc-900/90 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800 max-w-2xl w-full mx-4">
+            <div className="space-y-4">
+              {/* Prompt input */}
+              <div>
+                <Textarea
+                  placeholder="Describe what you want to generate or transform..."
+                  value={generationSettings.prompt}
+                  onChange={(e) =>
+                    setGenerationSettings((prev) => ({
+                      ...prev,
+                      prompt: e.target.value,
+                    }))
+                  }
+                  className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-400 resize-none"
+                  rows={2}
+                />
+              </div>
 
-            {/* Style selection */}
-            <div>
-              <Label htmlFor="style">Style</Label>
-              <Select
-                value={generationSettings.styleId}
-                onValueChange={handleStyleSelect}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Choose a style..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {styleModels.map((style) => (
-                    <SelectItem key={style.id} value={style.id}>
-                      {style.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                onClick={handleRunGeneration}
-                disabled={isGenerating || !generationSettings.prompt.trim()}
-                className="flex-1"
-              >
-                {isGenerating ? (
-                  <>
-                    <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-2 h-4 w-4" />
-                    Generate
-                  </>
-                )}
-              </Button>
-
-              <Button
-                variant="secondary"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </Button>
-
-              <Button
-                variant="secondary"
-                onClick={() => setIsApiKeyDialogOpen(true)}
-              >
-                <Key className="mr-2 h-4 w-4" />
-                API Key
-              </Button>
+              {/* Style grid */}
+              <div className="grid grid-cols-6 gap-2">
+                {styleModels.slice(0, 12).map((style) => (
+                  <button
+                    key={style.id}
+                    onClick={() => handleStyleSelect(style.id)}
+                    className={cn(
+                      "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                      generationSettings.styleId === style.id
+                        ? "border-blue-500 ring-2 ring-blue-500/20"
+                        : "border-zinc-700 hover:border-zinc-600"
+                    )}
+                  >
+                    <img
+                      src={style.imageSrc}
+                      alt={style.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-1 left-1 right-1">
+                      <p className="text-xs text-white font-medium truncate">
+                        {style.name}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -840,10 +742,10 @@ export default function HomePage() {
 
         {/* Drag overlay */}
         {isDragActive && (
-          <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-blue-500/10 border-2 border-dashed border-blue-500 z-50 flex items-center justify-center">
             <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-primary mb-4" />
-              <p className="text-lg font-medium text-primary">
+              <Upload className="mx-auto h-12 w-12 text-blue-500 mb-4" />
+              <p className="text-lg font-medium text-blue-500">
                 Drop files here to upload
               </p>
             </div>
@@ -940,7 +842,7 @@ export default function HomePage() {
 
       {/* API Key Dialog */}
       <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
           <DialogHeader>
             <DialogTitle>FAL API Key</DialogTitle>
             <DialogDescription>
@@ -956,18 +858,24 @@ export default function HomePage() {
                 placeholder="fal_..."
                 value={customApiKey}
                 onChange={(e) => setCustomApiKey(e.target.value)}
-                className="mt-1"
+                className="mt-1 bg-zinc-800 border-zinc-700 text-white"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
-              variant="secondary"
+              variant="ghost"
               onClick={() => setIsApiKeyDialogOpen(false)}
+              className="text-white hover:bg-zinc-800"
             >
               Cancel
             </Button>
-            <Button onClick={() => setIsApiKeyDialogOpen(false)}>Save</Button>
+            <Button 
+              onClick={() => setIsApiKeyDialogOpen(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

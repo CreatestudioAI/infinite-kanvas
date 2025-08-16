@@ -4,16 +4,15 @@ import { LogoIcon } from "@/components/icons/logo";
 
 export const PoweredByFalBadge: React.FC = () => {
   return (
-    <div className="absolute top-4 left-4 z-20 hidden md:block">
+    <div className="absolute bottom-6 left-6 z-20 hidden md:block">
       <Link
         href="https://fal.ai"
         target="_blank"
-        className="border bg-card p-2 flex flex-row rounded-xl gap-2 items-center"
+        className="bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 p-3 flex flex-row rounded-xl gap-2 items-center hover:bg-zinc-800/90 transition-colors"
       >
-        <LogoIcon className="w-10 h-10" />
-        <div className="text-xs">
-          Powered by <br />
-          <span className="font-bold text-xl">Fal</span>
+        <LogoIcon className="w-6 h-6 text-white" />
+        <div className="text-xs text-white">
+          Powered by <span className="font-bold">fal</span>
         </div>
       </Link>
     </div>
